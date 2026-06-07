@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useCategories } from '../../hooks/useNews';
-import { Menu, Search, User } from 'lucide-react';
+import { Menu, Search, User, Gift, ShieldAlert } from 'lucide-react';
 import { useState } from 'react';
 
 export default function Header() {
@@ -39,13 +39,20 @@ export default function Header() {
             ))}
           </nav>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3 sm:space-x-4">
+            <Link to="/earn" className="bg-yellow-400 text-yellow-900 border border-yellow-500 hover:bg-yellow-500 px-3 py-1.5 rounded-full font-bold flex items-center gap-1.5 transition-colors text-sm shadow-sm mr-2 sm:mr-0">
+              <Gift className="h-4 w-4" />
+              <span className="hidden sm:inline">कमाएँ</span>
+            </Link>
             <button className="text-gray-500 hover:text-gray-900 transition-colors hidden sm:block">
               <Search className="h-5 w-5" />
             </button>
-            <button className="text-gray-500 hover:text-gray-900 transition-colors">
+            <Link to="/profile" className="text-gray-500 hover:text-gray-900 transition-colors">
               <User className="h-5 w-5" />
-            </button>
+            </Link>
+            <Link to="/admin" title="Admin Panel" className="text-gray-500 hover:text-blue-600 transition-colors">
+              <ShieldAlert className="h-5 w-5" />
+            </Link>
           </div>
         </div>
       </div>
@@ -55,6 +62,16 @@ export default function Header() {
         <div className="md:hidden border-t border-gray-200 bg-white">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
             <Link to="/" className="block px-3 py-2 text-base font-black text-gray-900 hover:bg-gray-50 uppercase tracking-widest" onClick={() => setMobileMenuOpen(false)}>होम</Link>
+            <Link to="/earn" className="block px-3 py-2 text-base font-black text-yellow-600 hover:bg-yellow-50 uppercase tracking-widest" onClick={() => setMobileMenuOpen(false)}>
+              <div className="flex items-center gap-2">
+                <Gift className="w-5 h-5" /> कमाएँ और रिवॉर्ड्स
+              </div>
+            </Link>
+            <Link to="/admin" className="block px-3 py-2 text-base font-black text-blue-600 hover:bg-blue-50 uppercase tracking-widest" onClick={() => setMobileMenuOpen(false)}>
+              <div className="flex items-center gap-2">
+                <ShieldAlert className="w-5 h-5" /> एडमिन पैनल
+              </div>
+            </Link>
             {categories.map(cat => (
               <Link 
                 key={cat.id} 

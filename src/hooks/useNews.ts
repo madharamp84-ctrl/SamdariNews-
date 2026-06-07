@@ -12,6 +12,10 @@ export interface Post {
   author: string;
   featured: boolean;
   trending: boolean;
+  metaTitle?: string;
+  metaDescription?: string;
+  focusKeywords?: string;
+  status?: 'published' | 'draft';
 }
 
 export interface Category {

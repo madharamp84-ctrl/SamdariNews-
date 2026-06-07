@@ -16,7 +16,7 @@ async function startServer() {
     { id: "entertainment", name: "मनोरंजन" },
   ];
 
-  const posts = [
+  let posts = [
     {
       id: "1",
       title: "ग्लोबल समिट में ऐतिहासिक जलवायु समझौता",
@@ -28,7 +28,8 @@ async function startServer() {
       date: new Date().toISOString(),
       author: "अमित कुमार",
       featured: true,
-      trending: true
+      trending: true,
+      status: "published"
     },
     {
       id: "2",
@@ -41,7 +42,8 @@ async function startServer() {
       date: new Date(Date.now() - 86400000).toISOString(),
       author: "नेहा शर्मा",
       featured: true,
-      trending: false
+      trending: false,
+      status: "published"
     },
     {
       id: "3",
@@ -54,7 +56,8 @@ async function startServer() {
       date: new Date(Date.now() - 172800000).toISOString(),
       author: "राहुल सिंह",
       featured: false,
-      trending: true
+      trending: true,
+      status: "published"
     },
     {
       id: "4",
@@ -67,7 +70,8 @@ async function startServer() {
       date: new Date(Date.now() - 259200000).toISOString(),
       author: "प्रिया गुप्ता",
       featured: false,
-      trending: true
+      trending: true,
+      status: "published"
     }
   ];
 
@@ -77,11 +81,18 @@ async function startServer() {
   });
 
   app.get("/api/posts", (req, res) => {
-    const { category, featured, trending } = req.query;
+    const { category, featured, trending, status, all } = req.query;
     let filtered = posts;
+    
+    // Default to published only, unless all or explicitly requested
+    if (!all) {
+      filtered = filtered.filter(p => p.status === (status || "published"));
+    }
+    
     if (category) filtered = filtered.filter(p => p.categoryId === category);
     if (featured === 'true') filtered = filtered.filter(p => p.featured);
     if (trending === 'true') filtered = filtered.filter(p => p.trending);
+    filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     res.json(filtered);
   });
 
@@ -89,6 +100,73 @@ async function startServer() {
     const post = posts.find(p => p.slug === req.params.slug);
     if (post) res.json(post);
     else res.status(404).json({ error: "Post not found" });
+  });
+
+  app.post("/api/posts", (req, res) => {
+    const newPost = {
+      ...req.body,
+      id: String(Date.now()),
+      date: new Date().toISOString()
+    };
+    posts.push(newPost);
+    res.json(newPost);
+  });
+
+  app.delete("/api/posts/:id", (req, res) => {
+    posts = posts.filter(p => p.id !== req.params.id);
+    res.json({ success: true });
+  });
+
+  app.post("/api/generate-article", async (req, res) => {
+    try {
+      const { topic, category } = req.body;
+      const { GoogleGenAI, Type } = await import("@google/genai");
+      
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ error: "Gemini API key is not configured" });
+      }
+
+      const ai = new GoogleGenAI({
+        apiKey,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          }
+        }
+      }); // Initialization as per SKILL.md
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: `Write a compelling Hindi news article about the following topic: "${topic}". 
+                   The category is "${category}".
+                   Provide a title, an excerpt (short summary), the full detailed content, and a fictional Indian journalist author name.`,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              title: { type: Type.STRING, description: "Article title in Hindi" },
+              excerpt: { type: Type.STRING, description: "Short summary in Hindi" },
+              content: { type: Type.STRING, description: "Full detailed article content in Hindi" },
+              author: { type: Type.STRING, description: "Author name in Hindi" }
+            },
+            required: ["title", "excerpt", "content", "author"]
+          }
+        }
+      });
+      
+      const textResponse = response.text;
+      if (!textResponse) {
+        throw new Error("Failed to generate content.");
+      }
+      
+      const generated = JSON.parse(textResponse);
+      res.json(generated);
+    } catch (error) {
+      console.error("Gemini Error:", error);
+      res.status(500).json({ error: "Failed to generate AI article draft" });
+    }
   });
 
   // === VITE MIDDLEWARE ===

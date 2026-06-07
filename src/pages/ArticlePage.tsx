@@ -3,13 +3,22 @@ import { useState, useEffect } from 'react';
 import { Post } from '../hooks/useNews';
 import Sidebar from '../components/layout/Sidebar';
 import CategoryBadge from '../components/ui/CategoryBadge';
-import { Facebook, Twitter, Linkedin, Share2, ArrowLeft } from 'lucide-react';
+import { Facebook, Twitter, Linkedin, Share2, ArrowLeft, Check } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function ArticlePage() {
   const { slug } = useParams<{ slug: string }>();
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href);
+    setCopied(true);
+    setTimeout(() => {
+      setCopied(false);
+    }, 2500);
+  };
 
   useEffect(() => {
     fetch(`/api/posts/${slug}`)
@@ -35,8 +44,36 @@ export default function ArticlePage() {
 
   const formattedDate = format(new Date(post.date), 'MMMM d, yyyy • h:mm a');
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    "headline": post.metaTitle || post.title,
+    "description": post.metaDescription || post.excerpt,
+    "image": [
+      post.imageUrl
+    ],
+    "datePublished": post.date,
+    "dateModified": post.date,
+    "author": [{
+      "@type": "Person",
+      "name": post.author
+    }],
+    "publisher": {
+      "@type": "Organization",
+      "name": "Samachar News",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://samacharnews.com/logo.png"
+      }
+    }
+  };
+
   return (
     <div className="flex flex-col lg:flex-row gap-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div className="flex-1 min-w-0">
         <Link to="/" className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-900 mb-6 transition-colors">
           <ArrowLeft className="w-4 h-4 mr-1" /> वापस लौटें
@@ -73,8 +110,18 @@ export default function ArticlePage() {
                 <button className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-red-100 hover:text-red-600 transition-colors">
                   <Linkedin className="w-4 h-4" />
                 </button>
-                <button className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 hover:text-red-600 transition-colors ml-2">
-                  <Share2 className="w-4 h-4" />
+                <button 
+                  onClick={handleShare}
+                  title="लिंक कॉपी करें"
+                  className="relative w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 hover:text-red-600 transition-colors ml-2"
+                >
+                  {copied ? <Check className="w-4 h-4 text-green-600" /> : <Share2 className="w-4 h-4" />}
+                  {copied && (
+                    <span className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs font-bold px-2.5 py-1.5 rounded shadow-lg whitespace-nowrap animate-in fade-in zoom-in duration-200 z-10">
+                      लिंक कॉपी हो गया
+                      <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
+                    </span>
+                  )}
                 </button>
               </div>
             </div>
