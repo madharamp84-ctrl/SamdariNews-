@@ -1,0 +1,6 @@
+{
+  "name": "Samdari News",
+  "description": "A fully functional news platform with a frontend application and a mocked backend.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
